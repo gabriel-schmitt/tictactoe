@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <limits.h>
+#include <stdlib.h>
 
 // --- Definições Abstratas ---
 typedef struct
@@ -63,7 +64,25 @@ int utilidade(Estado estado)
   return 0; // Empate ou jogo em andamento
 }
 
-Acao *acoes(Estado estado, int *num_acoes);
+Acao *acoes(Estado estado, int *num_acoes)
+{
+  // Retorna uma lista de ações possíveis (jogadas) para o estado atual
+  // Implementar a lógica para gerar as ações com base no estado do tabuleiro.
+  Acao *lista_acoes = (Acao *)malloc(sizeof(Acao) * 9);
+  if (lista_acoes == NULL) exit(1);
+
+  *num_acoes = 0;
+  for (int i = 0; i < 9; i++)  {
+    if (estado.tabuleiro[i] == ' ')
+    {
+      lista_acoes[*num_acoes].linha = i / 3;
+      lista_acoes[*num_acoes].coluna = i % 3;
+      (*num_acoes)++;
+    }
+  }
+  return lista_acoes;
+}
+
 Estado resultado(Estado estado, Acao acao);
 
 // --- Funções utilitárias matemáticas ---
@@ -75,9 +94,7 @@ int minimax(Estado estado, int profundidade, int e_maximizador)
 {
   // Caso base: verifica se o nó é terminal (fim de jogo)
   if (teste_terminal(estado))
-  {
     return utilidade(estado);
-  }
 
   // Obtém as ações possíveis para o estado atual
   int num_acoes = 0;
@@ -94,8 +111,7 @@ int minimax(Estado estado, int profundidade, int e_maximizador)
       melhor_valor = max(melhor_valor, valor);
     }
 
-    // Nota: Deve liberar a memória de lista_acoes
-    // caso ela tenha sido alocada dinamicamente.
+    free(lista_acoes);
     return melhor_valor;
   }
   else
@@ -109,6 +125,7 @@ int minimax(Estado estado, int profundidade, int e_maximizador)
       pior_valor = min(pior_valor, valor);
     }
 
+    free(lista_acoes);
     return pior_valor;
   }
 }
