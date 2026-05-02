@@ -133,6 +133,8 @@ Acao minimax_decision(Estado estado)
     }
   }
 
+  free(lista_acoes);
+
   // 4. Após testar todas as ações, retornamos a que resultou no maior v
   return best_action;
 }
@@ -150,8 +152,10 @@ int max_value(Estado estado)
   Acao *lista_acoes = acoes(estado, &num_acoes);
   for (int i = 0; i < num_acoes; i++)
   {
-    v = max(v, min_value(resultado(estado, lista_acoes[i], 0)));
+    v = max(v, min_value(resultado(estado, lista_acoes[i], 1)));
   }
+
+  free(lista_acoes);
   return v;
 }
 
@@ -168,8 +172,10 @@ int min_value(Estado estado)
   Acao *lista_acoes = acoes(estado, &num_acoes);
   for (int i = 0; i < num_acoes; i++)
   {
-    v = min(v, max_value(resultado(estado, lista_acoes[i], 1)));
+    v = min(v, max_value(resultado(estado, lista_acoes[i], 0)));
   }
+
+  free(lista_acoes);
   return v;
 }
 
@@ -200,9 +206,10 @@ int main()
   } while (xisOuBola.min != 'x' && xisOuBola.min != 'o');
 
   int vez_do_jogador;
+  char resp_comecar;
   printf("Quer comecar? (S/n)\n");
-  scanf(" %c", &vez_do_jogador); // O espaço antes do %c é para limpar o buffer
-  vez_do_jogador = tolower(vez_do_jogador) == 'n' ? 0 : 1;
+  scanf(" %c", &resp_comecar); // O espaço antes do %c é para limpar o buffer
+  vez_do_jogador = tolower(resp_comecar) == 'n' ? 0 : 1;
 
   // Inicializa o estado do jogo
   Estado estado = {{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
