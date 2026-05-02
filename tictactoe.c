@@ -83,7 +83,18 @@ Acao *acoes(Estado estado, int *num_acoes)
   return lista_acoes;
 }
 
-Estado resultado(Estado estado, Acao acao);
+Estado resultado(Estado estado, Acao acao, int e_maximizador)
+{
+  // Retorna o estado resultante de aplicar a ação no estado atual
+  // Implementar a lógica para atualizar o tabuleiro com a jogada.
+  Estado novo_estado = estado;
+  int pos = acao.linha * 3 + acao.coluna;
+  if (novo_estado.tabuleiro[pos] == ' ')
+  {
+    novo_estado.tabuleiro[pos] = (e_maximizador == 1) ? xisOuBola.max : xisOuBola.min;
+  }
+  return novo_estado;
+}
 
 // --- Funções utilitárias matemáticas ---
 int max(int a, int b) { return (a > b) ? a : b; }
@@ -106,7 +117,7 @@ int minimax(Estado estado, int profundidade, int e_maximizador)
 
     for (int i = 0; i < num_acoes; i++)
     {
-      Estado proximo_estado = resultado(estado, lista_acoes[i]);
+      Estado proximo_estado = resultado(estado, lista_acoes[i], 1);
       int valor = minimax(proximo_estado, profundidade + 1, 0);
       melhor_valor = max(melhor_valor, valor);
     }
@@ -120,7 +131,7 @@ int minimax(Estado estado, int profundidade, int e_maximizador)
 
     for (int i = 0; i < num_acoes; i++)
     {
-      Estado proximo_estado = resultado(estado, lista_acoes[i]);
+      Estado proximo_estado = resultado(estado, lista_acoes[i], 0);
       int valor = minimax(proximo_estado, profundidade + 1, 1);
       pior_valor = min(pior_valor, valor);
     }
