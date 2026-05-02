@@ -19,7 +19,14 @@ struct
   char max, min;
 } xisOuBola;
 
-
+// --- Protótipos das funções ---
+int utilidade(Estado estado);
+int teste_terminal(Estado estado);
+Acao *acoes(Estado estado, int *num_acoes);
+Estado resultado(Estado estado, Acao acao, int e_maximizador);
+int max_value(Estado estado);
+int min_value(Estado estado);
+Acao minimax_decision(Estado estado);
 
 // --- Funções auxiliares ---
 int teste_terminal(Estado estado)
@@ -69,10 +76,12 @@ Acao *acoes(Estado estado, int *num_acoes)
   // Retorna uma lista de ações possíveis (jogadas) para o estado atual
   // Implementar a lógica para gerar as ações com base no estado do tabuleiro.
   Acao *lista_acoes = (Acao *)malloc(sizeof(Acao) * 9);
-  if (lista_acoes == NULL) exit(1);
+  if (lista_acoes == NULL)
+    exit(1);
 
   *num_acoes = 0;
-  for (int i = 0; i < 9; i++)  {
+  for (int i = 0; i < 9; i++)
+  {
     if (estado.tabuleiro[i] == ' ')
     {
       lista_acoes[*num_acoes].linha = i / 3;
@@ -101,50 +110,75 @@ int max(int a, int b) { return (a > b) ? a : b; }
 int min(int a, int b) { return (a < b) ? a : b; }
 
 // --- Algoritmo Minimax ---
-int minimax(Estado estado, int profundidade, int e_maximizador)
+Acao minimax_decision(Estado estado)
 {
-  // Caso base: verifica se o nó é terminal (fim de jogo)
+  Acao best_action = {-1, -1};
+  int best_value = INT_MIN; // Começamos com o pior valor possível para o MAX
+
+  // 1. Iteramos por cada ação legal disponível no estado atual
+  int num_acoes = 0;
+  Acao *lista_acoes = acoes(estado, &num_acoes); // num_acoes é atualizado pela função `acoes`
+  for (int i = 0; i < num_acoes; i++)
+  {
+    // 2. Simulamos o resultado da ação e perguntamos:
+    // "Se eu fizer isso, qual o melhor que o oponente (MIN) pode fazer?"
+    int v = min_value(resultado(estado, lista_acoes[i], 1));
+
+    // 3. Se o valor retornado por essa linha de jogo (v) for melhor
+    // do que o que encontramos até agora, atualizamos nossa escolha.
+    if (v > best_value)
+    {
+      best_value = v;
+      best_action = lista_acoes[i];
+    }
+  }
+
+  // 4. Após testar todas as ações, retornamos a que resultou no maior v
+  return best_action;
+}
+
+int max_value(Estado estado)
+{
+  // Tenta maximizar o ganho do agente
+  // Caso base: se o jogo acabou, retorna a utilidade real
   if (teste_terminal(estado))
     return utilidade(estado);
 
-  // Obtém as ações possíveis para o estado atual
+  int v = INT_MIN; // Começamos com o pior valor possível para o MAX
+  // Explora os sucessores: como é a vez do MAX, ele busca o maior valor entre os filhos
   int num_acoes = 0;
   Acao *lista_acoes = acoes(estado, &num_acoes);
-
-  if (e_maximizador)
+  for (int i = 0; i < num_acoes; i++)
   {
-    int melhor_valor = INT_MIN;
-
-    for (int i = 0; i < num_acoes; i++)
-    {
-      Estado proximo_estado = resultado(estado, lista_acoes[i], 1);
-      int valor = minimax(proximo_estado, profundidade + 1, 0);
-      melhor_valor = max(melhor_valor, valor);
-    }
-
-    free(lista_acoes);
-    return melhor_valor;
+    v = max(v, min_value(resultado(estado, lista_acoes[i], 0)));
   }
-  else
-  {
-    int pior_valor = INT_MAX;
-
-    for (int i = 0; i < num_acoes; i++)
-    {
-      Estado proximo_estado = resultado(estado, lista_acoes[i], 0);
-      int valor = minimax(proximo_estado, profundidade + 1, 1);
-      pior_valor = min(pior_valor, valor);
-    }
-
-    free(lista_acoes);
-    return pior_valor;
-  }
+  return v;
 }
 
-int main() {
+int min_value(Estado estado)
+{
+  // Tenta minimizar o ganho do agente
+  // Caso base: se o jogo acabou, retorna a utilidade real
+  if (teste_terminal(estado))
+    return utilidade(estado);
+
+  int v = INT_MAX; // Começamos com o pior valor possível para o MIN
+  // Explora os sucessores: como é a vez do MIN, ele busca o menor valor entre os filhos
+  int num_acoes = 0;
+  Acao *lista_acoes = acoes(estado, &num_acoes);
+  for (int i = 0; i < num_acoes; i++)
+  {
+    v = min(v, max_value(resultado(estado, lista_acoes[i], 1)));
+  }
+  return v;
+}
+
+int main()
+{
   printf("JOGO DA VELHA\n\n");
 
-  do {
+  do
+  {
     printf("Quer ser X ou O?\n");
     xisOuBola.min = tolower(getc(stdin));
     xisOuBola.max = (xisOuBola.min == 'x') ? 'o' : 'x';
