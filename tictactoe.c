@@ -173,6 +173,20 @@ int min_value(Estado estado)
   return v;
 }
 
+// --- UI ---
+void exibir_tabuleiro(Estado estado)
+{
+  printf("Tabuleiro atual:\n");
+  for (int i = 0; i < 3; i++)
+  {
+    for (int j = 0; j < 3; j++)
+    {
+      printf("%c ", estado.tabuleiro[i * 3 + j]);
+    }
+    printf("\n");
+  }
+}
+
 int main()
 {
   printf("JOGO DA VELHA\n\n");
@@ -180,9 +194,66 @@ int main()
   do
   {
     printf("Quer ser X ou O?\n");
-    xisOuBola.min = tolower(getc(stdin));
+    scanf(" %c", &xisOuBola.min); // O espaço antes do %c é para limpar o buffer
+    xisOuBola.min = tolower(xisOuBola.min);
     xisOuBola.max = (xisOuBola.min == 'x') ? 'o' : 'x';
   } while (xisOuBola.min != 'x' && xisOuBola.min != 'o');
+
+  int vez_do_jogador;
+  printf("Quer comecar? (S/n)\n");
+  scanf(" %c", &vez_do_jogador); // O espaço antes do %c é para limpar o buffer
+  vez_do_jogador = tolower(vez_do_jogador) == 'n' ? 0 : 1;
+
+  // Inicializa o estado do jogo
+  Estado estado = {{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
+
+  exibir_tabuleiro(estado);
+
+  while (!teste_terminal(estado))
+  {
+    if (!vez_do_jogador)
+    {
+      Acao acao = minimax_decision(estado);
+      estado = resultado(estado, acao, 1);
+      printf("Computador jogou: (%d, %d)\n", acao.linha + 1, acao.coluna + 1);
+    }
+    else
+    {
+      int linha, coluna, pos;
+      do {
+        printf("\nSua vez! Digite a linha e coluna (1-3): ");
+        int inputs_lidos = scanf("%d %d", &linha, &coluna);
+        
+        if (inputs_lidos != 2) {
+            // Limpa o buffer se o usuário digitou letras
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+            linha = -1; // Força a repetição 
+        }
+
+        pos = (linha - 1) * 3 + (coluna - 1);
+        
+        if (linha < 1 || linha > 3 || coluna < 1 || coluna > 3 || estado.tabuleiro[pos] != ' ') {
+            printf("Jogada invalida! Tente novamente.\n");
+            pos = -1; // força a repetição do loop
+        }
+      } while(pos < 0);
+
+      Acao acao = {linha - 1, coluna - 1}; // Ajusta para índice 0
+      estado = resultado(estado, acao, 0);
+    }
+    exibir_tabuleiro(estado);
+    vez_do_jogador = !vez_do_jogador; // Alterna entre MAX e MIN
+  }
+
+  // --- Resultado Final ---
+  int resultado_final = utilidade(estado);
+  if (resultado_final == 1)
+    printf("\nO Computador venceu!\n");
+  else if (resultado_final == -1)
+    printf("\nVoce venceu!\n");
+  else
+    printf("\nDeu velha!\n");
 
   return 0;
 }
