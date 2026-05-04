@@ -193,6 +193,12 @@ void exibir_tabuleiro(Estado estado)
   }
 }
 
+void limpar_buffer()
+{
+  int c;
+  while ((c = getchar()) != '\n' && c != EOF);
+}
+
 int main()
 {
   printf("JOGO DA VELHA\n\n");
@@ -200,7 +206,9 @@ int main()
   do
   {
     printf("Quer ser X ou O?\n");
-    scanf(" %c", &xisOuBola.min); // O espaço antes do %c é para limpar o buffer
+    scanf(" %c", &xisOuBola.min);
+    limpar_buffer();
+
     xisOuBola.min = tolower(xisOuBola.min);
     xisOuBola.max = (xisOuBola.min == 'x') ? 'o' : 'x';
   } while (xisOuBola.min != 'x' && xisOuBola.min != 'o');
@@ -208,7 +216,9 @@ int main()
   int vez_do_jogador;
   char resp_comecar;
   printf("Quer comecar? (S/n)\n");
-  scanf(" %c", &resp_comecar); // O espaço antes do %c é para limpar o buffer
+  scanf(" %c", &resp_comecar);
+  limpar_buffer();
+
   vez_do_jogador = tolower(resp_comecar) == 'n' ? 0 : 1;
 
   // Inicializa o estado do jogo
@@ -230,19 +240,17 @@ int main()
       do {
         printf("\nSua vez! Digite a linha e coluna (1-3): ");
         int inputs_lidos = scanf("%d %d", &linha, &coluna);
+        limpar_buffer(); // Sempre limpa o resto da linha para evitar lixo nas próximas rodadas
         
         if (inputs_lidos != 2) {
-            // Limpa o buffer se o usuário digitou letras
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF);
-            linha = -1; // Força a repetição 
-        }
-
-        pos = (linha - 1) * 3 + (coluna - 1);
-        
-        if (linha < 1 || linha > 3 || coluna < 1 || coluna > 3 || estado.tabuleiro[pos] != ' ') {
-            printf("Jogada invalida! Tente novamente.\n");
-            pos = -1; // força a repetição do loop
+            linha = -1; // Força a repetição em caso de erro na leitura
+            pos = -1;
+        } else {
+            pos = (linha - 1) * 3 + (coluna - 1);
+            if (linha < 1 || linha > 3 || coluna < 1 || coluna > 3 || estado.tabuleiro[pos] != ' ') {
+                printf("Jogada invalida! Tente novamente.\n");
+                pos = -1; // força a repetição do loop
+            }
         }
       } while(pos < 0);
 
