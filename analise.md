@@ -10,6 +10,14 @@ Os valores abaixo foram coletados durante uma partida real com o computador joga
 | 2ª                   | 7              | 8.231        | 748            | 90,9%   |
 | 3ª                   | 5              | 173          | 77             | 55,5%   |
 
+A partida que gerou esses valores seguiu a sequência abaixo (computador = X, jogador = O):
+
+| Rodada | Jogada do Computador | Jogada do Jogador | Estado do Tabuleiro       |
+|:------:|:--------------------:|:-----------------:|:-------------------------:|
+| 1      | (1, 1)               | (1, 2)            | `X O .` / `. . .` / `. . .` |
+| 2      | (2, 1)               | (3, 3)            | `X O .` / `X . .` / `. . O` |
+| 3      | (2, 2)               | —                 | `X O .` / `X X .` / `. . O` |
+
 > **Nota:** o jogo também exibe esta tabela ao final de cada partida. Os valores variam conforme as jogadas do usuário, pois o número de células vazias e o perfil do tabuleiro mudam.
 
 ---
