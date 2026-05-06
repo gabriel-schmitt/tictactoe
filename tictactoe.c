@@ -19,6 +19,10 @@ struct
   char max, min;
 } xisOuBola;
 
+// Contadores de nós visitados por algoritmo
+int nos_minimax = 0;
+int nos_alphabeta = 0;
+
 // --- Protótipos das funções ---
 int utilidade(Estado estado);
 int teste_terminal(Estado estado);
@@ -27,6 +31,9 @@ Estado resultado(Estado estado, Acao acao, int e_maximizador);
 int max_value(Estado estado);
 int min_value(Estado estado);
 Acao minimax_decision(Estado estado);
+int max_value_ab(Estado estado, int alpha, int beta);
+int min_value_ab(Estado estado, int alpha, int beta);
+Acao alphabeta_decision(Estado estado);
 
 // --- Funções auxiliares ---
 int teste_terminal(Estado estado)
@@ -75,6 +82,8 @@ Acao *acoes(Estado estado, int *num_acoes)
 {
   // Retorna uma lista de ações possíveis (jogadas) para o estado atual
   // Implementar a lógica para gerar as ações com base no estado do tabuleiro.
+  // Nota: a ordem aqui (linha a linha, da posição 0 a 8) afeta a poda alfa-beta —
+  // priorizar centro e cantos geraria podas mais cedo, reduzindo nós visitados.
   Acao *lista_acoes = (Acao *)malloc(sizeof(Acao) * 9);
   if (lista_acoes == NULL)
     exit(1);
@@ -141,6 +150,7 @@ Acao minimax_decision(Estado estado)
 
 int max_value(Estado estado)
 {
+  nos_minimax++; // conta este nó
   // Tenta maximizar o ganho do agente
   // Caso base: se o jogo acabou, retorna a utilidade real
   if (teste_terminal(estado))
@@ -161,6 +171,7 @@ int max_value(Estado estado)
 
 int min_value(Estado estado)
 {
+  nos_minimax++; // conta este nó
   // Tenta minimizar o ganho do agente
   // Caso base: se o jogo acabou, retorna a utilidade real
   if (teste_terminal(estado))
@@ -173,6 +184,71 @@ int min_value(Estado estado)
   for (int i = 0; i < num_acoes; i++)
   {
     v = min(v, max_value(resultado(estado, lista_acoes[i], 0)));
+  }
+
+  free(lista_acoes);
+  return v;
+}
+
+// --- Algoritmo Minimax com Poda Alfa-Beta ---
+Acao alphabeta_decision(Estado estado)
+{
+  Acao best_action = {-1, -1};
+  int best_value = INT_MIN;
+  int alpha = INT_MIN; // melhor valor garantido para MAX até agora
+  int beta = INT_MAX;  // melhor valor garantido para MIN até agora
+
+  int num_acoes = 0;
+  Acao *lista_acoes = acoes(estado, &num_acoes);
+  for (int i = 0; i < num_acoes; i++)
+  {
+    int v = min_value_ab(resultado(estado, lista_acoes[i], 1), alpha, beta);
+    if (v > best_value)
+    {
+      best_value = v;
+      best_action = lista_acoes[i];
+    }
+    alpha = max(alpha, v);
+  }
+
+  free(lista_acoes);
+  return best_action;
+}
+
+int max_value_ab(Estado estado, int alpha, int beta)
+{
+  nos_alphabeta++; // conta este nó
+  if (teste_terminal(estado))
+    return utilidade(estado);
+
+  int v = INT_MIN;
+  int num_acoes = 0;
+  Acao *lista_acoes = acoes(estado, &num_acoes);
+  for (int i = 0; i < num_acoes; i++)
+  {
+    v = max(v, min_value_ab(resultado(estado, lista_acoes[i], 1), alpha, beta));
+    if (v >= beta) { free(lista_acoes); return v; } // poda beta: MIN nunca escolheria este ramo
+    alpha = max(alpha, v);
+  }
+
+  free(lista_acoes);
+  return v;
+}
+
+int min_value_ab(Estado estado, int alpha, int beta)
+{
+  nos_alphabeta++; // conta este nó
+  if (teste_terminal(estado))
+    return utilidade(estado);
+
+  int v = INT_MAX;
+  int num_acoes = 0;
+  Acao *lista_acoes = acoes(estado, &num_acoes);
+  for (int i = 0; i < num_acoes; i++)
+  {
+    v = min(v, max_value_ab(resultado(estado, lista_acoes[i], 0), alpha, beta));
+    if (v <= alpha) { free(lista_acoes); return v; } // poda alfa: MAX nunca escolheria este ramo
+    beta = min(beta, v);
   }
 
   free(lista_acoes);
@@ -221,6 +297,23 @@ int main()
 
   vez_do_jogador = tolower(resp_comecar) == 'n' ? 0 : 1;
 
+  // Escolha do algoritmo
+  char resp_algo;
+  int usar_alphabeta;
+  do {
+    printf("Usar Poda Alfa-Beta? (s/N): ");
+    scanf(" %c", &resp_algo);
+    limpar_buffer();
+    resp_algo = tolower(resp_algo);
+  } while (resp_algo != 's' && resp_algo != 'n');
+  usar_alphabeta = (resp_algo == 's');
+  printf("Algoritmo selecionado: %s\n\n", usar_alphabeta ? "Minimax com Poda Alfa-Beta" : "Minimax Puro");
+
+  // Tabela de análise: nós visitados por jogada do computador (máx 5 jogadas)
+  int tabela_mm[5] = {0};
+  int tabela_ab[5] = {0};
+  int num_jogadas_comp = 0;
+
   // Inicializa o estado do jogo
   Estado estado = {{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}};
 
@@ -230,9 +323,26 @@ int main()
   {
     if (!vez_do_jogador)
     {
-      Acao acao = minimax_decision(estado);
+      // Executa ambos os algoritmos para fins de comparação
+      nos_minimax = 0;
+      Acao acao_mm = minimax_decision(estado);
+      int mm_count = nos_minimax;
+
+      nos_alphabeta = 0;
+      Acao acao_ab = alphabeta_decision(estado);
+      int ab_count = nos_alphabeta;
+
+      Acao acao = usar_alphabeta ? acao_ab : acao_mm;
       estado = resultado(estado, acao, 1);
       printf("Computador jogou: (%d, %d)\n", acao.linha + 1, acao.coluna + 1);
+      printf("[Nos visitados] Minimax: %d | Alfa-Beta: %d\n", mm_count, ab_count);
+
+      if (num_jogadas_comp < 5)
+      {
+        tabela_mm[num_jogadas_comp] = mm_count;
+        tabela_ab[num_jogadas_comp] = ab_count;
+        num_jogadas_comp++;
+      }
     }
     else
     {
@@ -241,7 +351,7 @@ int main()
         printf("\nSua vez! Digite a linha e coluna (1-3): ");
         int inputs_lidos = scanf("%d %d", &linha, &coluna);
         limpar_buffer(); // Sempre limpa o resto da linha para evitar lixo nas próximas rodadas
-        
+
         if (inputs_lidos != 2) {
             linha = -1; // Força a repetição em caso de erro na leitura
             pos = -1;
@@ -269,6 +379,19 @@ int main()
     printf("\nVoce venceu!\n");
   else
     printf("\nDeu velha!\n");
+
+  // --- Tabela de Nós Visitados ---
+  printf("\n=== Nos Visitados por Jogada do Computador ===\n");
+  printf("Jogada | Minimax Puro | Alfa-Beta | Reducao\n");
+  printf("-------|-------------|-----------|--------\n");
+  for (int i = 0; i < num_jogadas_comp; i++)
+  {
+    int reducao = (tabela_mm[i] > 0)
+      ? (int)((1.0 - (double)tabela_ab[i] / tabela_mm[i]) * 100)
+      : 0;
+    printf("  %d    |   %7d   |  %7d | %3d%%\n",
+           i + 1, tabela_mm[i], tabela_ab[i], reducao);
+  }
 
   return 0;
 }
